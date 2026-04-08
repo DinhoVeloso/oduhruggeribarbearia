@@ -1,35 +1,45 @@
 const categories = [
   {
-    name: "Barbearia",
+    name: "Cabelo",
     services: [
-      { name: "Cabelo", price: "R$80,00" },
-      { name: "Barba", price: "R$80,00" },
-      { name: "Barba e Cabelo", price: "R$130,00" },
-      { name: "Corte com Visagismo", price: "R$200,00" },
-      { name: "Consultoria de Visagismo", price: "R$700,00" },
-      { name: "Corte Raspado", price: "R$50,00" },
-      { name: "Acabamento", price: "R$40,00" },
-      { name: "Sobrancelhas", price: "R$40,00" },
+      { name: "Corte Masculino", price: "R$80,00", desc: "Higienização e secagem" },
+      { name: "Corte com Visagismo", price: "R$200,00", desc: "Visual harmonioso baseado no formato do rosto" },
+      { name: "Visagismo", price: "R$600,00", desc: "Análise completa de estética e identidade" },
+      { name: "Corte + Sobrancelhas", price: "R$100,00", desc: "Corte de cabelo e sobrancelhas" },
+      { name: "Corte a Máquina", price: "R$50,00", desc: "Raspagem com pente" },
+      { name: "Coloração / Tonalização", price: "R$80,00", desc: "Tintura com produtos profissionais" },
+      { name: "Hidratação", price: "R$60,00", desc: "Tratamento capilar hidratante" },
+      { name: "Botox Capilar", price: "R$180,00", desc: "Reconstrução e brilho — a partir" },
+      { name: "Luzes", price: "a partir de R$180,00", desc: "Reflexos e mechas" },
+      { name: "Platinado", price: "a partir de R$250,00", desc: "Descoloração global" },
+      { name: "Progressiva", price: "a partir de R$180,00", desc: "Selagem e alisamento" },
+      { name: "Relaxamento", price: "R$50,00", desc: "Alisa o cabelo de forma suave" },
+      { name: "Camuflagem de Brancos", price: "Consultar", desc: "Cobertura dos fios brancos sem tintura total" },
     ],
   },
   {
-    name: "Tratamentos Capilares",
+    name: "Barba e Bigode",
     services: [
-      { name: "Luzes", price: "a partir de R$150,00" },
-      { name: "Platinado", price: "a partir de R$200,00" },
-      { name: "Progressiva", price: "a partir de R$150,00" },
-      { name: "Botox Capilar", price: "a partir de R$150,00" },
-      { name: "Relaxamento", price: "R$60,00" },
-      { name: "Corte & Relaxamento", price: "R$130,00" },
+      { name: "Barba + Sobrancelhas", price: "R$100,00", desc: "Barboterapia e limpeza das sobrancelhas" },
+      { name: "Barba com Máquina", price: "R$50,00", desc: "Aparar com máquina elétrica" },
+      { name: "Barboterapia", price: "R$85,00", desc: "Creme esfoliante, toalha quente e massagem facial" },
+      { name: "Barboterapia + Combo Cera", price: "R$130,00", desc: "Barboterapia com depilação nariz e ouvido" },
+      { name: "Barboterapia + Sobrancelhas", price: "R$100,00", desc: "Barboterapia com limpeza das sobrancelhas" },
+      { name: "Barboterapia + Sobr. + Cera", price: "R$150,00", desc: "Barboterapia completa com depilação" },
+      { name: "Cabelo e Barba", price: "R$150,00", desc: "Corte de cabelo e barboterapia" },
+      { name: "Corte e Barba + Sobrancelhas", price: "R$170,00", desc: "Combo completo com sobrancelhas" },
+      { name: "Cabelo + Cera Ouvido/Nariz", price: "R$150,00", desc: "Corte com depilação" },
     ],
   },
   {
     name: "Estética & Bem-estar",
     services: [
-      { name: "Cera (Ouvido, Nariz)", price: "R$40,00" },
-      { name: "Massagem Terapêutica", price: "R$180,00" },
-      { name: "Massagem Relaxante", price: "R$180,00" },
-      { name: "Drenagem Linfática", price: "R$180,00" },
+      { name: "Sobrancelha na Pinça", price: "R$40,00", desc: "Modelagem com pinça" },
+      { name: "Depilação Combo Ouvido + Nariz", price: "R$80,00", desc: "Depilação com cera quente" },
+      { name: "Depilação Nariz ou Ouvido", price: "R$50,00", desc: "Depilação com cera quente" },
+      { name: "Massagem Terapêutica", price: "R$180,00", desc: "Alívio de tensões e dores" },
+      { name: "Massagem Relaxante", price: "R$180,00", desc: "Relaxamento profundo" },
+      { name: "Drenagem Linfática", price: "R$180,00", desc: "Redução de inchaço e toxinas" },
     ],
   },
 ];
@@ -61,6 +71,7 @@ const Services = () => {
                   >
                     <div>
                       <h4 className="font-semibold text-foreground mb-1">{s.name}</h4>
+                      <p className="text-xs text-muted-foreground">{s.desc}</p>
                     </div>
                     <div className="flex items-center justify-between mt-4">
                       <span className="text-gold font-display text-lg font-bold">{s.price}</span>

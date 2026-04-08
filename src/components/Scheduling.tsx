@@ -2,26 +2,35 @@ import { useState, useMemo } from "react";
 import { Calendar, Clock, User, Send } from "lucide-react";
 
 const allServices = [
-  { category: "Barbearia", items: [
-    { name: "Cabelo", price: "R$80,00", value: 80 },
-    { name: "Barba", price: "R$80,00", value: 80 },
-    { name: "Barba e Cabelo", price: "R$130,00", value: 130 },
+  { category: "Cabelo", items: [
+    { name: "Corte Masculino", price: "R$80,00", value: 80 },
     { name: "Corte com Visagismo", price: "R$200,00", value: 200 },
-    { name: "Consultoria de Visagismo", price: "R$700,00", value: 700 },
-    { name: "Corte Raspado", price: "R$50,00", value: 50 },
-    { name: "Acabamento", price: "R$40,00", value: 40 },
-    { name: "Sobrancelhas", price: "R$40,00", value: 40 },
+    { name: "Visagismo", price: "R$600,00", value: 600 },
+    { name: "Corte + Sobrancelhas", price: "R$100,00", value: 100 },
+    { name: "Corte a Máquina", price: "R$50,00", value: 50 },
+    { name: "Coloração / Tonalização", price: "R$80,00", value: 80 },
+    { name: "Hidratação", price: "R$60,00", value: 60 },
+    { name: "Botox Capilar", price: "a partir de R$180,00", value: 180 },
+    { name: "Luzes", price: "a partir de R$180,00", value: 180 },
+    { name: "Platinado", price: "a partir de R$250,00", value: 250 },
+    { name: "Progressiva", price: "a partir de R$180,00", value: 180 },
+    { name: "Relaxamento", price: "R$50,00", value: 50 },
   ]},
-  { category: "Tratamentos Capilares", items: [
-    { name: "Luzes", price: "a partir de R$150,00", value: 150 },
-    { name: "Platinado", price: "a partir de R$200,00", value: 200 },
-    { name: "Progressiva", price: "a partir de R$150,00", value: 150 },
-    { name: "Botox Capilar", price: "a partir de R$150,00", value: 150 },
-    { name: "Relaxamento", price: "R$60,00", value: 60 },
-    { name: "Corte & Relaxamento", price: "R$130,00", value: 130 },
+  { category: "Barba e Bigode", items: [
+    { name: "Barba + Sobrancelhas", price: "R$100,00", value: 100 },
+    { name: "Barba com Máquina", price: "R$50,00", value: 50 },
+    { name: "Barboterapia", price: "R$85,00", value: 85 },
+    { name: "Barboterapia + Combo Cera", price: "R$130,00", value: 130 },
+    { name: "Barboterapia + Sobrancelhas", price: "R$100,00", value: 100 },
+    { name: "Barboterapia + Sobr. + Cera", price: "R$150,00", value: 150 },
+    { name: "Cabelo e Barba", price: "R$150,00", value: 150 },
+    { name: "Corte e Barba + Sobrancelhas", price: "R$170,00", value: 170 },
+    { name: "Cabelo + Cera Ouvido/Nariz", price: "R$150,00", value: 150 },
   ]},
   { category: "Estética & Bem-estar", items: [
-    { name: "Cera (Ouvido, Nariz)", price: "R$40,00", value: 40 },
+    { name: "Sobrancelha na Pinça", price: "R$40,00", value: 40 },
+    { name: "Depilação Combo Ouvido + Nariz", price: "R$80,00", value: 80 },
+    { name: "Depilação Nariz ou Ouvido", price: "R$50,00", value: 50 },
     { name: "Massagem Terapêutica", price: "R$180,00", value: 180 },
     { name: "Massagem Relaxante", price: "R$180,00", value: 180 },
     { name: "Drenagem Linfática", price: "R$180,00", value: 180 },
@@ -30,13 +39,9 @@ const allServices = [
 
 const getHours = (dayOfWeek: number): string[] => {
   const hours: string[] = [];
-  let start = 9, end = 20;
   if (dayOfWeek === 0) return [];
-  if (dayOfWeek === 1) { start = 10; end = 18; }
-  if (dayOfWeek === 2) { start = 10; end = 20; }
-  if (dayOfWeek === 3) { start = 9; end = 20; }
-  if (dayOfWeek === 4 || dayOfWeek === 5) { start = 9; end = 21; }
-  if (dayOfWeek === 6) { start = 9; end = 18; }
+  const start = 9;
+  const end = (dayOfWeek === 4 || dayOfWeek === 5) ? 21 : 20;
   for (let h = start; h < end; h++) {
     hours.push(`${String(h).padStart(2, "0")}:00`);
     hours.push(`${String(h).padStart(2, "0")}:30`);
@@ -60,8 +65,7 @@ const Scheduling = () => {
 
   const dayOfWeek = useMemo(() => {
     if (!date) return -1;
-    const d = new Date(date + "T12:00:00");
-    return d.getDay();
+    return new Date(date + "T12:00:00").getDay();
   }, [date]);
 
   const availableHours = useMemo(() => {
@@ -71,10 +75,7 @@ const Scheduling = () => {
 
   const isSunday = dayOfWeek === 0;
 
-  const minDate = useMemo(() => {
-    const d = new Date();
-    return d.toISOString().split("T")[0];
-  }, []);
+  const minDate = useMemo(() => new Date().toISOString().split("T")[0], []);
 
   const canSubmit = name.trim() && selectedService && date && time && !isSunday;
 
@@ -96,7 +97,6 @@ const Scheduling = () => {
         </p>
 
         <div className="bg-card border border-border rounded-2xl p-6 md:p-8 space-y-6">
-          {/* Name */}
           <div>
             <label className="flex items-center gap-2 text-sm font-medium text-foreground mb-2">
               <User size={16} className="text-gold" /> Seu nome
@@ -111,7 +111,6 @@ const Scheduling = () => {
             />
           </div>
 
-          {/* Service */}
           <div>
             <label className="flex items-center gap-2 text-sm font-medium text-foreground mb-2">
               <Calendar size={16} className="text-gold" /> Serviço
@@ -141,7 +140,6 @@ const Scheduling = () => {
             </div>
           )}
 
-          {/* Date */}
           <div>
             <label className="flex items-center gap-2 text-sm font-medium text-foreground mb-2">
               <Calendar size={16} className="text-gold" /> Data
@@ -158,7 +156,6 @@ const Scheduling = () => {
             )}
           </div>
 
-          {/* Time */}
           {availableHours.length > 0 && !isSunday && (
             <div>
               <label className="flex items-center gap-2 text-sm font-medium text-foreground mb-2">
@@ -182,7 +179,6 @@ const Scheduling = () => {
             </div>
           )}
 
-          {/* Submit */}
           <button
             onClick={handleSubmit}
             disabled={!canSubmit}
