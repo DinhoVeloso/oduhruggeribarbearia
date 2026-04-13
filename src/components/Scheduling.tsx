@@ -1,200 +1,270 @@
-import { useState, useMemo } from "react";
-import { Calendar, Clock, User, Send } from "lucide-react";
+import { useState, useEffect } from "react";
+import { format } from "date-fns";
+import { Calendar as CalendarIcon, Clock, Check, User, Phone, Scissors } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { supabase, type Service } from "@/lib/supabase";
 
-const allServices = [
-  { category: "Cabelo", items: [
-    { name: "Corte Masculino", price: "R$80,00", value: 80 },
-    { name: "Corte com Visagismo", price: "R$200,00", value: 200 },
-    { name: "Visagismo", price: "R$600,00", value: 600 },
-    { name: "Corte + Sobrancelhas", price: "R$100,00", value: 100 },
-    { name: "Corte a Máquina", price: "R$50,00", value: 50 },
-    { name: "Coloração / Tonalização", price: "R$80,00", value: 80 },
-    { name: "Hidratação", price: "R$60,00", value: 60 },
-    { name: "Botox Capilar", price: "a partir de R$180,00", value: 180 },
-    { name: "Luzes", price: "a partir de R$180,00", value: 180 },
-    { name: "Platinado", price: "a partir de R$250,00", value: 250 },
-    { name: "Progressiva", price: "a partir de R$180,00", value: 180 },
-    { name: "Relaxamento", price: "R$50,00", value: 50 },
-  ]},
-  { category: "Barba e Bigode", items: [
-    { name: "Barba + Sobrancelhas", price: "R$100,00", value: 100 },
-    { name: "Barba com Máquina", price: "R$50,00", value: 50 },
-    { name: "Barboterapia", price: "R$85,00", value: 85 },
-    { name: "Barboterapia + Combo Cera", price: "R$130,00", value: 130 },
-    { name: "Barboterapia + Sobrancelhas", price: "R$100,00", value: 100 },
-    { name: "Barboterapia + Sobr. + Cera", price: "R$150,00", value: 150 },
-    { name: "Cabelo e Barba", price: "R$150,00", value: 150 },
-    { name: "Corte e Barba + Sobrancelhas", price: "R$170,00", value: 170 },
-    { name: "Cabelo + Cera Ouvido/Nariz", price: "R$150,00", value: 150 },
-  ]},
-  { category: "Estética & Bem-estar", items: [
-    { name: "Sobrancelha na Pinça", price: "R$40,00", value: 40 },
-    { name: "Depilação Combo Ouvido + Nariz", price: "R$80,00", value: 80 },
-    { name: "Depilação Nariz ou Ouvido", price: "R$50,00", value: 50 },
-    { name: "Massagem Terapêutica", price: "R$180,00", value: 180 },
-    { name: "Massagem Relaxante", price: "R$180,00", value: 180 },
-    { name: "Drenagem Linfática", price: "R$180,00", value: 180 },
-  ]},
-];
+export const Scheduling = () => {
+    const [date, setDate] = useState<Date>();
+    const [selectedService, setSelectedService] = useState<string>("");
+    const [selectedTime, setSelectedTime] = useState<string>("");
+    const [name, setName] = useState("");
+    const [phone, setPhone] = useState("");
+    const [services, setServices] = useState<Service[]>([]);
+    const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+    const [loading, setLoading] = useState(false);
+    const { toast } = useToast();
 
-const getHours = (dayOfWeek: number): string[] => {
-  const hours: string[] = [];
-  if (dayOfWeek === 0) return [];
-  const start = 9;
-  const end = (dayOfWeek === 4 || dayOfWeek === 5) ? 21 : 20;
-  for (let h = start; h < end; h++) {
-    hours.push(`${String(h).padStart(2, "0")}:00`);
-    hours.push(`${String(h).padStart(2, "0")}:30`);
-  }
-  return hours;
-};
+    useEffect(() => {
+          const fetchServices = async () => {
+                  const { data, error } = await supabase
+                    .from('services')
+                    .select('*')
+                    .order('category', { ascending: true })
+                    .order('name', { ascending: true });
 
-const Scheduling = () => {
-  const [name, setName] = useState("");
-  const [selectedService, setSelectedService] = useState("");
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
+                  if (data) setServices(data);
+          };
 
-  const selectedServiceData = useMemo(() => {
-    for (const cat of allServices) {
-      const found = cat.items.find((s) => s.name === selectedService);
-      if (found) return found;
-    }
-    return null;
-  }, [selectedService]);
+                  fetchServices();
+    }, []);
 
-  const dayOfWeek = useMemo(() => {
-    if (!date) return -1;
-    return new Date(date + "T12:00:00").getDay();
-  }, [date]);
+    useEffect(() => {
+          const fetchSlots = async () => {
+                  if (date) {
+                            const formattedDate = format(date, 'yyyy-MM-dd');
+                            const { data, error } = await supabase.rpc('get_available_slots', {
+                                        appointment_day: formattedDate
+                            });
 
-  const availableHours = useMemo(() => {
-    if (dayOfWeek < 0) return [];
-    return getHours(dayOfWeek);
-  }, [dayOfWeek]);
+                    if (data) {
+                                setAvailableSlots(data);
+                    } else {
+                                setAvailableSlots([]);
+                    }
+                  }
+          };
 
-  const isSunday = dayOfWeek === 0;
+                  fetchSlots();
+    }, [date]);
 
-  const minDate = useMemo(() => new Date().toISOString().split("T")[0], []);
+    const handleConfirm = async () => {
+          if (!date || !selectedService || !selectedTime || !name || !phone) {
+                  toast({
+                            title: "Campos incompletos",
+                            description: "Por favor, preencha todos os campos para agendar.",
+                            variant: "destructive",
+                  });
+                  return;
+          }
 
-  const canSubmit = name.trim() && selectedService && date && time && !isSunday;
+          setLoading(true);
 
-  const handleSubmit = () => {
-    if (!canSubmit || !selectedServiceData) return;
-    const dateFormatted = new Date(date + "T12:00:00").toLocaleDateString("pt-BR");
-    const msg = `Olá, meu nome é ${name.trim()}.%0AGostaria de agendar o serviço: ${selectedServiceData.name}.%0AValor: ${selectedServiceData.price}.%0AData desejada: ${dateFormatted}.%0AHorário escolhido: ${time}.`;
-    window.open(`https://wa.me/5511948830502?text=${msg}`, "_blank");
-  };
+          try {
+                  const formattedDate = format(date, 'yyyy-MM-dd');
 
-  return (
-    <section id="agendamento" className="py-20 bg-secondary">
-      <div className="container mx-auto px-4 max-w-2xl">
-        <h2 className="text-3xl md:text-4xl font-display text-center mb-4">
-          Agende seu <span className="text-gold">horário</span>
-        </h2>
-        <p className="text-center text-muted-foreground mb-10">
-          Preencha os dados abaixo e confirme pelo WhatsApp.
-        </p>
+            const { error } = await supabase
+                    .from('appointments')
+                    .insert({
+                                client_name: name,
+                                client_phone: phone,
+                                service_id: selectedService,
+                                appointment_date: formattedDate,
+                                appointment_time: selectedTime,
+                                status: 'confirmed'
+                    });
 
-        <div className="bg-card border border-border rounded-2xl p-6 md:p-8 space-y-6">
-          <div>
-            <label className="flex items-center gap-2 text-sm font-medium text-foreground mb-2">
-              <User size={16} className="text-gold" /> Seu nome
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Digite seu nome"
-              maxLength={100}
-              className="w-full bg-secondary border border-border rounded-lg px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-gold/50 transition"
-            />
-          </div>
+            if (error) {
+                      if (error.message.includes('Horario ocupado') || error.message.includes('indisponivel')) {
+                                  toast({
+                                                title: "Horario ocupado",
+                                                description: "Este horario acabou de ser preenchido. Por favor, escolha outro.",
+                                                variant: "destructive",
+                                  });
+                      } else {
+                                  throw error;
+                      }
+                      return;
+            }
 
-          <div>
-            <label className="flex items-center gap-2 text-sm font-medium text-foreground mb-2">
-              <Calendar size={16} className="text-gold" /> Serviço
-            </label>
-            <select
-              value={selectedService}
-              onChange={(e) => setSelectedService(e.target.value)}
-              className="w-full bg-secondary border border-border rounded-lg px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-gold/50 transition appearance-none"
-            >
-              <option value="">Selecione um serviço</option>
-              {allServices.map((cat) => (
-                <optgroup key={cat.category} label={cat.category}>
-                  {cat.items.map((s) => (
-                    <option key={s.name} value={s.name}>
-                      {s.name} — {s.price}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
-          </div>
+            const selectedServiceObj = services.find(s => s.id === selectedService);
+                  const message = `Ola! Gostaria de confirmar meu agendamento:\n\n` +
+                            `Nome: ${name}\n` +
+                            `Servico: ${selectedServiceObj?.name}\n` +
+                            `Data: ${format(date, "dd/MM/yyyy")}\n` +
+                            `Horario: ${selectedTime}`;
 
-          {selectedServiceData && (
-            <div className="bg-gold/10 border border-gold/20 rounded-lg p-4 text-center">
-              <span className="text-sm text-muted-foreground">Valor:</span>
-              <span className="ml-2 text-gold font-display text-xl font-bold">{selectedServiceData.price}</span>
-            </div>
-          )}
+            const whatsappUrl = `https://wa.me/5511999999999?text=${encodeURIComponent(message)}`;
+                  window.open(whatsappUrl, "_blank");
 
-          <div>
-            <label className="flex items-center gap-2 text-sm font-medium text-foreground mb-2">
-              <Calendar size={16} className="text-gold" /> Data
-            </label>
-            <input
-              type="date"
-              value={date}
-              min={minDate}
-              onChange={(e) => { setDate(e.target.value); setTime(""); }}
-              className="w-full bg-secondary border border-border rounded-lg px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-gold/50 transition"
-            />
-            {isSunday && (
-              <p className="text-destructive text-sm mt-1">Não abrimos aos domingos. Escolha outro dia.</p>
-            )}
-          </div>
+            toast({
+                      title: "Agendamento realizado!",
+                      description: "Seu horario foi reservado com sucesso.",
+            });
 
-          {availableHours.length > 0 && !isSunday && (
-            <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-foreground mb-2">
-                <Clock size={16} className="text-gold" /> Horário
-              </label>
-              <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                {availableHours.map((h) => (
-                  <button
-                    key={h}
-                    onClick={() => setTime(h)}
-                    className={`py-2 px-2 rounded-lg text-sm font-medium transition-colors border ${
-                      time === h
-                        ? "gradient-gold text-primary-foreground border-transparent"
-                        : "bg-secondary border-border text-foreground hover:border-gold/40"
-                    }`}
-                  >
-                    {h}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+            // Clear form
+            setSelectedTime("");
+                  setName("");
+                  setPhone("");
 
-          <button
-            onClick={handleSubmit}
-            disabled={!canSubmit}
-            className={`w-full py-4 rounded-lg font-semibold text-lg flex items-center justify-center gap-2 transition-all ${
-              canSubmit
-                ? "gradient-gold text-primary-foreground hover:opacity-90"
-                : "bg-muted text-muted-foreground cursor-not-allowed"
-            }`}
-          >
-            <Send size={20} />
-            Confirmar agendamento no WhatsApp
-          </button>
-        </div>
-      </div>
-    </section>
-  );
-};
+          } catch (error) {
+                  console.error(error);
+                  toast({
+                            title: "Erro ao agendar",
+                            description: "Ocorreu um erro ao processar seu agendamento. Tente novamente.",
+                            variant: "destructive",
+                  });
+          } finally {
+                  setLoading(false);
+          }
+    };
 
-export default Scheduling;
+    const categories = Array.from(new Set(services.map(s => s.category)));
+
+    return (
+          <section id="agendamento" className="py-20 bg-muted/30">
+                <div className="container mx-auto px-4">
+                        <div className="max-w-4xl mx-auto">
+                                  <div className="text-center mb-12">
+                                              <h2 className="text-3xl md:text-4xl font-bold mb-4">Agende seu Horario</h2>h2>
+                                              <p className="text-muted-foreground">Escolha o melhor momento para cuidar do seu visual</p>p>
+                                  </div>div>
+                        
+                                  <div className="grid md:grid-cols-2 gap-8 bg-background p-6 rounded-2xl shadow-lg border border-border">
+                                              <div className="space-y-6">
+                                                            <div className="space-y-2">
+                                                                            <label className="text-sm font-medium flex items-center gap-2">
+                                                                                              <User className="w-4 h-4" /> Nome Completo
+                                                                            </label>label>
+                                                                            <Input 
+                                                                                                placeholder="Seu nome" 
+                                                                              value={name}
+                                                                                                onChange={(e) => setName(e.target.value)}
+                                                                                              />
+                                                            </div>div>
+                                              
+                                                            <div className="space-y-2">
+                                                                            <label className="text-sm font-medium flex items-center gap-2">
+                                                                                              <Phone className="w-4 h-4" /> WhatsApp
+                                                                            </label>label>
+                                                                            <Input 
+                                                                                                placeholder="(00) 00000-0000" 
+                                                                              value={phone}
+                                                                                                onChange={(e) => setPhone(e.target.value)}
+                                                                                              />
+                                                            </div>div>
+                                              
+                                                            <div className="space-y-2">
+                                                                            <label className="text-sm font-medium flex items-center gap-2">
+                                                                                              <Scissors className="w-4 h-4" /> Servico
+                                                                            </label>label>
+                                                                            <Select value={selectedService} onValueChange={setSelectedService}>
+                                                                                              <SelectTrigger>
+                                                                                                                  <SelectValue placeholder="Selecione um servico" />
+                                                                                                </SelectTrigger>SelectTrigger>
+                                                                                              <SelectContent>
+                                                                                                {categories.map(category => (
+                                  <div key={category}>
+                                                          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase bg-muted/50">
+                                                            {category}
+                                                          </div>div>
+                                    {services.filter(s => s.category === category).map(service => (
+                                                              <SelectItem key={service.id} value={service.id}>
+                                                                {service.name} - {service.price}
+                                                              </SelectItem>SelectItem>
+                                                            ))}
+                                  </div>div>
+                                ))}
+                                                                                                </SelectContent>SelectContent>
+                                                                            </Select>Select>
+                                                            </div>div>
+                                              </div>div>
+                                  
+                                              <div className="space-y-6">
+                                                            <div className="space-y-2">
+                                                                            <label className="text-sm font-medium flex items-center gap-2">
+                                                                                              <CalendarIcon className="w-4 h-4" /> Data
+                                                                            </label>label>
+                                                                            <Popover>
+                                                                                              <PopoverTrigger asChild>
+                                                                                                                  <Button
+                                                                                                                                          variant={"outline"}
+                                                                                                                                          className={cn(
+                                                                                                                                                                    "w-full justify-start text-left font-normal",
+                                                                                                                                                                    !date && "text-muted-foreground"
+                                                                                                                                                                  )}
+                                                                                                                                        >
+                                                                                                                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                                                                                                    {date ? format(date, "PPP") : "Selecione uma data"}
+                                                                                                                    </Button>Button>
+                                                                                                </PopoverTrigger>PopoverTrigger>
+                                                                                              <PopoverContent className="w-auto p-0">
+                                                                                                                  <Calendar
+                                                                                                                                          mode="single"
+                                                                                                                                          selected={date}
+                                                                                                                                          onSelect={setDate}
+                                                                                                                                          disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))}
+                                                                                                                                          initialFocus
+                                                                                                                                        />
+                                                                                                </PopoverContent>PopoverContent>
+                                                                            </Popover>Popover>
+                                                            </div>div>
+                                              
+                                                            <div className="space-y-2">
+                                                                            <label className="text-sm font-medium flex items-center gap-2">
+                                                                                              <Clock className="w-4 h-4" /> Horario
+                                                                            </label>label>
+                                                                            <div className="grid grid-cols-3 gap-2">
+                                                                              {availableSlots.length > 0 ? (
+                                availableSlots.map((time) => (
+                                                        <Button
+                                                                                  key={time}
+                                                                                  variant={selectedTime === time ? "default" : "outline"}
+                                                                                  className="text-sm"
+                                                                                  onClick={() => setSelectedTime(time)}
+                                                                                >
+                                                          {time}
+                                                        </Button>Button>
+                                                      ))
+                              ) : (
+                                <div className="col-span-3 text-center py-4 text-muted-foreground text-sm italic">
+                                  {date ? "Nenhum horario disponivel para esta data." : "Selecione uma data para ver os horarios."}
+                                </div>div>
+                                                                                              )}
+                                                                            </div>div>
+                                                            </div>div>
+                                              
+                                                            <Button 
+                                                                              className="w-full h-12 text-lg" 
+                                                              onClick={handleConfirm}
+                                                                              disabled={loading}
+                                                                            >
+                                                              {loading ? "Processando..." : (
+                                                                                                <>
+                                                                                                                    <Check className="w-5 h-5 mr-2" /> Confirmar Agendamento
+                                                                                                  </>>
+                                                                                              )}
+                                                            </Button>Button>
+                                              </div>div>
+                                  </div>div>
+                        </div>div>
+                </div>div>
+          </section>section>
+        );
+};</></section>
